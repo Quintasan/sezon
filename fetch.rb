@@ -5,25 +5,27 @@ require 'pry'
 
 DB = Sequel.sqlite("./cartoons.sqlite3")
 
-#DB.create_table :animes do
-  #primary_key :id
-  #String :title, uniq: true, null: false
-  #String :season, null: false
-  #Integer :year, null: false
-  #Integer :mean_score
-  #Integer :average_score
-#end
+DB.create_table :animes do
+  primary_key :id
+  String :title, uniq: true, null: false
+  String :season, null: false
+  Integer :year, null: false
+  Integer :mean_score
+  Integer :average_score
+  Integer :popularity
+  String :score_distribution
+end
 
-#DB.create_table :studios do
-  #primary_key :id
-  #String :name, uniq: true, null: false
-#end
+DB.create_table :studios do
+  primary_key :id
+  String :name, uniq: true, null: false
+end
 
-#DB.create_table :animes_studios do
-  #primary_key :id
-  #foreign_key :anime_id, :animes
-  #foreign_key :studio_id, :studios
-#end
+DB.create_table :animes_studios do
+  primary_key :id
+  foreign_key :anime_id, :animes
+  foreign_key :studio_id, :studios
+end
 
 class Anime < Sequel::Model
   many_to_many :studios
@@ -61,6 +63,13 @@ query($page: Int, $year: Int, $season: MediaSeason) {
       }
       averageScore
       meanScore
+      popularity
+      stats {
+        scoreDistribution {
+          score
+          amount
+        }
+      }
       studios(isMain: true) {
         nodes {
           name
@@ -83,7 +92,7 @@ def scrape(season, year)
   )
 
   animes = result.data.page.media.map do |anime|
-    [anime.title.romaji, season, year, anime.average_score, anime.mean_score]
+    [anime.title.romaji, season, year, anime.average_score, anime.mean_score, anime.popularity]
   end
 
   studios = result.data.page.media.map do |anime|
@@ -108,7 +117,7 @@ def scrape(season, year)
     )
 
     animes += result.data.page.media.map do |anime|
-        [anime.title.romaji, season, year, anime.average_score, anime.mean_score]
+        [anime.title.romaji, season, year, anime.average_score, anime.mean_score, anime.popularity]
     end
 
     sts = result.data.page.media.map do |anime|
@@ -144,8 +153,8 @@ end
 argss.each do |args|
   args.each do |arg|
     puts "Scraping #{arg[0]} #{arg[1]}"
-    #scrape(arg[0], arg[1])
-    #sleep 10
+    scrape(arg[0], arg[1])
+    sleep 10
   end
 end
 
